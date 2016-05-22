@@ -213,7 +213,7 @@ static void flatten_surface_closure_tree(ShaderData *sd, int path_flag,
 						sc.prim = bsdf->sc.prim;
 
 						/* add */
-						if(sc.sample_weight > CLOSURE_WEIGHT_CUTOFF && sd->num_closure < MAX_CLOSURE) {
+						if(sc.sample_weight > CLOSURE_WEIGHT_CUTOFF && sd->num_closure < sd->max_closure) {
 							sd->closure[sd->num_closure++] = sc;
 							sd->flag |= bsdf->shaderdata_flag();
 							shader_merge_last_closure_with_data(sd);
@@ -236,7 +236,7 @@ static void flatten_surface_closure_tree(ShaderData *sd, int path_flag,
 						sc.prim = NULL;
 
 						/* flag */
-						if(sd->num_closure < MAX_CLOSURE) {
+						if(sd->num_closure < sd->max_closure) {
 							sd->closure[sd->num_closure++] = sc;
 							shader_merge_last_closure_without_data(sd);
 							sd->flag |= SD_EMISSION;
@@ -258,7 +258,7 @@ static void flatten_surface_closure_tree(ShaderData *sd, int path_flag,
 						sc.data2 = 0.0f;
 						sc.prim = NULL;
 
-						if(sd->num_closure < MAX_CLOSURE) {
+						if(sd->num_closure < sd->max_closure) {
 							sd->closure[sd->num_closure++] = sc;
 							shader_merge_last_closure_without_data(sd);
 							sd->flag |= SD_AO;
@@ -277,7 +277,7 @@ static void flatten_surface_closure_tree(ShaderData *sd, int path_flag,
 						sc.data2 = 0.0f;
 						sc.prim = NULL;
 
-						if(sd->num_closure < MAX_CLOSURE) {
+						if(sd->num_closure < sd->max_closure) {
 							sd->closure[sd->num_closure++] = sc;
 							shader_merge_last_closure_without_data(sd);
 							sd->flag |= SD_HOLDOUT;
@@ -292,7 +292,7 @@ static void flatten_surface_closure_tree(ShaderData *sd, int path_flag,
 						CBSSRDFClosure *bssrdf = (CBSSRDFClosure *)prim;
 						float sample_weight = fabsf(average(weight));
 
-						if(sample_weight > CLOSURE_WEIGHT_CUTOFF && sd->num_closure+2 < MAX_CLOSURE) {
+						if(sample_weight > CLOSURE_WEIGHT_CUTOFF && sd->num_closure+2 < sd->max_closure) {
 							sc.sample_weight = sample_weight;
 
 							sc.type = bssrdf->sc.type;
@@ -486,7 +486,7 @@ static void flatten_volume_closure_tree(ShaderData *sd, int path_flag,
 
 						/* add */
 						if((sc.sample_weight > CLOSURE_WEIGHT_CUTOFF) &&
-						   (sd->num_closure < MAX_CLOSURE))
+						   (sd->num_closure < sd->max_closure))
 						{
 							sd->closure[sd->num_closure++] = sc;
 							sd->flag |= volume->shaderdata_flag();
@@ -509,7 +509,7 @@ static void flatten_volume_closure_tree(ShaderData *sd, int path_flag,
 						sc.prim = NULL;
 
 						/* flag */
-						if(sd->num_closure < MAX_CLOSURE) {
+						if(sd->num_closure < sd->max_closure) {
 							sd->closure[sd->num_closure++] = sc;
 							sd->flag |= SD_EMISSION;
 							shader_merge_last_closure_without_data(sd);

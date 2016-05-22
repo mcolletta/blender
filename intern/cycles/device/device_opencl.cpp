@@ -2125,7 +2125,7 @@ public:
 	size_t get_shader_data_size(size_t max_closure)
 	{
 		/* ShaderData size with variable size ShaderClosure array */
-		return sizeof(ShaderData) - (sizeof(ShaderClosure) * (MAX_CLOSURE - max_closure));
+		return sizeof(ShaderData) + sizeof(ShaderClosure) * max_closure;
 	}
 
 	/* Returns size of KernelGlobals structure associated with OpenCL. */
@@ -2444,6 +2444,7 @@ public:
 			kernel_set_args(ckPathTraceKernel_data_init,
 			                0,
 			                kgbuffer,
+			                sd,
 			                sd_DL_shadow,
 			                d_data,
 			                per_sample_output_buffers,

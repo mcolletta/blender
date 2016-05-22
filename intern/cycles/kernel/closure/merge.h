@@ -19,7 +19,8 @@ CCL_NAMESPACE_BEGIN
 /* Merging
  *
  * This helps with branched path tracing, to avoid sampling identical BSDFs
- * separate, and also saves closures space. */
+ * separate, and also saves closures space. Particularly for shadow and emission
+ * where we limit the number of closures more. */
 
 ccl_device_noinline void shader_merge_last_closure_without_data(ShaderData *sd)
 {

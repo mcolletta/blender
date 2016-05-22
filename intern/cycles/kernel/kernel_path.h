@@ -96,6 +96,12 @@ ccl_device void kernel_path_indirect(KernelGlobals *kg,
 		}
 #endif
 
+		/* shader data memory used for both volumes and surfaces, saves stack space */
+		ShaderData sd;
+		ShaderClosure sd_closure[MAX_MAIN_CLOSURE];
+		sd.closure = sd_closure;
+		sd.max_closure = MAX_MAIN_CLOSURE;
+
 #ifdef __VOLUME__
 		/* volume attenuation, emission, scatter */
 		if(state->volume_stack[0].shader != SHADER_NONE) {
@@ -115,15 +121,14 @@ ccl_device void kernel_path_indirect(KernelGlobals *kg,
 			if(decoupled) {
 				/* cache steps along volume for repeated sampling */
 				VolumeSegment volume_segment;
-				ShaderData volume_sd;
 
 				shader_setup_from_volume(kg,
-				                         &volume_sd,
+				                         &sd,
 				                         &volume_ray);
 				kernel_volume_decoupled_record(kg,
 				                               state,
 				                               &volume_ray,
-				                               &volume_sd,
+				                               &sd,
 				                               &volume_segment,
 				                               heterogeneous);
 
@@ -146,7 +151,7 @@ ccl_device void kernel_path_indirect(KernelGlobals *kg,
 					/* direct light sampling */
 					kernel_branched_path_volume_connect_light(kg,
 					                                          rng,
-					                                          &volume_sd,
+					                                          &sd,
 					                                          throughput,
 					                                          state,
 					                                          L,
@@ -163,7 +168,7 @@ ccl_device void kernel_path_indirect(KernelGlobals *kg,
 					result = kernel_volume_decoupled_scatter(kg,
 					                                         state,
 					                                         &volume_ray,
-					                                         &volume_sd,
+					                                         &sd,
 					                                         &throughput,
 					                                         rphase,
 					                                         rscatter,
@@ -178,7 +183,7 @@ ccl_device void kernel_path_indirect(KernelGlobals *kg,
 				if(result == VOLUME_PATH_SCATTERED) {
 					if(kernel_path_volume_bounce(kg,
 					                             rng,
-					                             &volume_sd,
+					                             &sd,
 					                             &throughput,
 					                             state,
 					                             L,
@@ -198,16 +203,15 @@ ccl_device void kernel_path_indirect(KernelGlobals *kg,
 #  endif
 			{
 				/* integrate along volume segment with distance sampling */
-				ShaderData volume_sd;
 				VolumeIntegrateResult result = kernel_volume_integrate(
-					kg, state, &volume_sd, &volume_ray, L, &throughput, rng, heterogeneous);
+					kg, state, &sd, &volume_ray, L, &throughput, rng, heterogeneous);
 
 #  ifdef __VOLUME_SCATTER__
 				if(result == VOLUME_PATH_SCATTERED) {
 					/* direct lighting */
 					kernel_path_volume_connect_light(kg,
 					                                 rng,
-					                                 &volume_sd,
+					                                 &sd,
 					                                 throughput,
 					                                 state,
 					                                 L);
@@ -215,7 +219,7 @@ ccl_device void kernel_path_indirect(KernelGlobals *kg,
 					/* indirect light bounce */
 					if(kernel_path_volume_bounce(kg,
 					                             rng,
-					                             &volume_sd,
+					                             &sd,
 					                             &throughput,
 					                             state,
 					                             L,
@@ -246,7 +250,6 @@ ccl_device void kernel_path_indirect(KernelGlobals *kg,
 		}
 
 		/* setup shading */
-		ShaderData sd;
 		shader_setup_from_ray(kg,
 		                      &sd,
 		                      &isect,
@@ -671,6 +674,12 @@ ccl_device_inline float4 kernel_path_integrate(KernelGlobals *kg,
 		}
 #endif
 
+		/* shader data memory used for both volumes and surfaces, saves stack space */
+		ShaderData sd;
+		ShaderClosure sd_closure[MAX_MAIN_CLOSURE];
+		sd.closure = sd_closure;
+		sd.max_closure = MAX_MAIN_CLOSURE;
+
 #ifdef __VOLUME__
 		/* volume attenuation, emission, scatter */
 		if(state.volume_stack[0].shader != SHADER_NONE) {
@@ -686,11 +695,10 @@ ccl_device_inline float4 kernel_path_integrate(KernelGlobals *kg,
 			if(decoupled) {
 				/* cache steps along volume for repeated sampling */
 				VolumeSegment volume_segment;
-				ShaderData volume_sd;
 
-				shader_setup_from_volume(kg, &volume_sd, &volume_ray);
+				shader_setup_from_volume(kg, &sd, &volume_ray);
 				kernel_volume_decoupled_record(kg, &state,
-					&volume_ray, &volume_sd, &volume_segment, heterogeneous);
+					&volume_ray, &sd, &volume_segment, heterogeneous);
 
 				volume_segment.sampling_method = sampling_method;
 
@@ -705,7 +713,7 @@ ccl_device_inline float4 kernel_path_integrate(KernelGlobals *kg,
 					int all = false;
 
 					/* direct light sampling */
-					kernel_branched_path_volume_connect_light(kg, rng, &volume_sd,
+					kernel_branched_path_volume_connect_light(kg, rng, &sd,
 						throughput, &state, &L, all, &volume_ray, &volume_segment);
 
 					/* indirect sample. if we use distance sampling and take just
@@ -715,7 +723,7 @@ ccl_device_inline float4 kernel_path_integrate(KernelGlobals *kg,
 					float rscatter = path_state_rng_1D_for_decision(kg, rng, &state, PRNG_SCATTER_DISTANCE);
 
 					result = kernel_volume_decoupled_scatter(kg,
-						&state, &volume_ray, &volume_sd, &throughput,
+						&state, &volume_ray, &sd, &throughput,
 						rphase, rscatter, &volume_segment, NULL, true);
 				}
 
@@ -723,7 +731,7 @@ ccl_device_inline float4 kernel_path_integrate(KernelGlobals *kg,
 				kernel_volume_decoupled_free(kg, &volume_segment);
 
 				if(result == VOLUME_PATH_SCATTERED) {
-					if(kernel_path_volume_bounce(kg, rng, &volume_sd, &throughput, &state, &L, &ray))
+					if(kernel_path_volume_bounce(kg, rng, &sd, &throughput, &state, &L, &ray))
 						continue;
 					else
 						break;
@@ -736,17 +744,16 @@ ccl_device_inline float4 kernel_path_integrate(KernelGlobals *kg,
 #  endif
 			{
 				/* integrate along volume segment with distance sampling */
-				ShaderData volume_sd;
 				VolumeIntegrateResult result = kernel_volume_integrate(
-					kg, &state, &volume_sd, &volume_ray, &L, &throughput, rng, heterogeneous);
+					kg, &state, &sd, &volume_ray, &L, &throughput, rng, heterogeneous);
 
 #  ifdef __VOLUME_SCATTER__
 				if(result == VOLUME_PATH_SCATTERED) {
 					/* direct lighting */
-					kernel_path_volume_connect_light(kg, rng, &volume_sd, throughput, &state, &L);
+					kernel_path_volume_connect_light(kg, rng, &sd, throughput, &state, &L);
 
 					/* indirect light bounce */
-					if(kernel_path_volume_bounce(kg, rng, &volume_sd, &throughput, &state, &L, &ray))
+					if(kernel_path_volume_bounce(kg, rng, &sd, &throughput, &state, &L, &ray))
 						continue;
 					else
 						break;
@@ -777,7 +784,6 @@ ccl_device_inline float4 kernel_path_integrate(KernelGlobals *kg,
 		}
 
 		/* setup shading */
-		ShaderData sd;
 		shader_setup_from_ray(kg, &sd, &isect, &ray);
 		float rbsdf = path_state_rng_1D_for_decision(kg, rng, &state, PRNG_BSDF);
 		shader_eval_surface(kg, &sd, &state, rbsdf, state.flag, SHADER_CONTEXT_MAIN);

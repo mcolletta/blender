@@ -256,6 +256,10 @@ ccl_device void kernel_bake_evaluate(KernelGlobals *kg, ccl_global uint4 *input,
                                      ShaderEvalType type, int pass_filter, int i, int offset, int sample)
 {
 	ShaderData sd;
+	ShaderClosure sd_closure[MAX_MAIN_CLOSURE];
+	sd.closure = sd_closure;
+	sd.max_closure = MAX_MAIN_CLOSURE;
+
 	PathState state = {0};
 	uint4 in = input[i * 2];
 	uint4 diff = input[i * 2 + 1];
@@ -494,6 +498,10 @@ ccl_device void kernel_shader_evaluate(KernelGlobals *kg,
                                        int sample)
 {
 	ShaderData sd;
+	ShaderClosure sd_closure[MAX_MAIN_CLOSURE];
+	sd.closure = sd_closure;
+	sd.max_closure = MAX_MAIN_CLOSURE;
+
 	PathState state = {0};
 	uint4 in = input[i];
 	float3 out;

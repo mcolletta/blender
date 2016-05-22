@@ -222,6 +222,10 @@ ccl_device void kernel_volume_shadow_heterogeneous(KernelGlobals *kg, PathState 
 ccl_device_noinline void kernel_volume_shadow(KernelGlobals *kg, PathState *state, Ray *ray, float3 *throughput)
 {
 	ShaderData sd;
+	ShaderClosure sd_closure[MAX_SHADOW_CLOSURE];
+	sd.closure = sd_closure;
+	sd.max_closure = MAX_SHADOW_CLOSURE;
+
 	shader_setup_from_volume(kg, &sd, ray);
 
 	if(volume_stack_is_heterogeneous(kg, state->volume_stack))

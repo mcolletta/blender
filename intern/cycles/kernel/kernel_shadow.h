@@ -113,6 +113,10 @@ ccl_device_inline bool shadow_blocked(KernelGlobals *kg, PathState *state, Ray *
 
 				/* setup shader data at surface */
 				ShaderData sd;
+				ShaderClosure sd_closure[MAX_SHADOW_CLOSURE];
+				sd.closure = sd_closure;
+				sd.max_closure = MAX_SHADOW_CLOSURE;
+
 				shader_setup_from_ray(kg, &sd, isect, ray);
 
 				/* attenuation from transparent surface */
@@ -253,6 +257,9 @@ ccl_device_noinline bool shadow_blocked(KernelGlobals *kg,
 				ShaderData *sd = kg->sd_input;
 #else
 				ShaderData sd_object;
+				ShaderClosure sd_object_closure[MAX_SHADOW_CLOSURE];
+				sd_object.closure = sd_object_closure;
+				sd_object.max_closure = MAX_SHADOW_CLOSURE;
 				ShaderData *sd = &sd_object;
 #endif
 				shader_setup_from_ray(kg, sd, isect, ray);

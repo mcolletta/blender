@@ -52,6 +52,7 @@
  */
 ccl_device void kernel_data_init(
         KernelGlobals *kg,
+        ShaderData *sd,
         ShaderData *sd_DL_shadow,
         ccl_constant KernelData *data,
         ccl_global float *per_sample_output_buffers,
@@ -87,6 +88,9 @@ ccl_device void kernel_data_init(
 #endif
         int parallel_samples)                        /* Number of samples to be processed in parallel */
 {
+	sd->max_closure = MAX_SPLIT_CLOSURE;
+	sd_DL_shadow->max_closure = MAX_SPLIT_CLOSURE;
+
 	kg->data = data;
 	kg->sd_input = sd_DL_shadow;
 	kg->isect_shadow = Intersection_coop_shadow;

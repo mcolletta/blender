@@ -164,6 +164,10 @@ ccl_device void kernel_branched_path_subsurface_scatter(KernelGlobals *kg,
 			/* compute lighting with the BSDF closure */
 			for(int hit = 0; hit < num_hits; hit++) {
 				ShaderData bssrdf_sd = *sd;
+				ShaderClosure bssrdf_sd_closure[MAX_BSSRDF_CLOSURE];
+				bssrdf_sd.closure = bssrdf_sd_closure;
+				bssrdf_sd.max_closure = MAX_BSSRDF_CLOSURE;
+
 				subsurface_scatter_multi_setup(kg,
 				                               &ss_isect,
 				                               hit,
@@ -274,6 +278,12 @@ ccl_device float4 kernel_branched_path_integrate(KernelGlobals *kg, RNG *rng, in
 		debug_data.num_ray_bounces++;
 #endif
 
+		/* shader data memory used for both volumes and surfaces, saves stack space */
+		ShaderData sd;
+		ShaderClosure sd_closure[MAX_MAIN_CLOSURE];
+		sd.closure = sd_closure;
+		sd.max_closure = MAX_MAIN_CLOSURE;
+
 #ifdef __VOLUME__
 		/* volume attenuation, emission, scatter */
 		if(state.volume_stack[0].shader != SHADER_NONE) {
@@ -287,11 +297,10 @@ ccl_device float4 kernel_branched_path_integrate(KernelGlobals *kg, RNG *rng, in
 
 			/* cache steps along volume for repeated sampling */
 			VolumeSegment volume_segment;
-			ShaderData volume_sd;
 
-			shader_setup_from_volume(kg, &volume_sd, &volume_ray);
+			shader_setup_from_volume(kg, &sd, &volume_ray);
 			kernel_volume_decoupled_record(kg, &state,
-				&volume_ray, &volume_sd, &volume_segment, heterogeneous);
+				&volume_ray, &sd, &volume_segment, heterogeneous);
 
 			/* direct light sampling */
 			if(volume_segment.closure_flag & SD_SCATTER) {
@@ -299,7 +308,7 @@ ccl_device float4 kernel_branched_path_integrate(KernelGlobals *kg, RNG *rng, in
 
 				int all = kernel_data.integrator.sample_all_lights_direct;
 
-				kernel_branched_path_volume_connect_light(kg, rng, &volume_sd,
+				kernel_branched_path_volume_connect_light(kg, rng, &sd,
 					throughput, &state, &L, all, &volume_ray, &volume_segment);
 
 				/* indirect light sampling */
@@ -326,14 +335,14 @@ ccl_device float4 kernel_branched_path_integrate(KernelGlobals *kg, RNG *rng, in
 					float rscatter = path_state_rng_1D_for_decision(kg, &tmp_rng, &ps, PRNG_SCATTER_DISTANCE);
 
 					VolumeIntegrateResult result = kernel_volume_decoupled_scatter(kg,
-						&ps, &pray, &volume_sd, &tp, rphase, rscatter, &volume_segment, NULL, false);
+						&ps, &pray, &sd, &tp, rphase, rscatter, &volume_segment, NULL, false);
 
 					(void)result;
 					kernel_assert(result == VOLUME_PATH_SCATTERED);
 
 					if(kernel_path_volume_bounce(kg,
 					                             rng,
-					                             &volume_sd,
+					                             &sd,
 					                             &tp,
 					                             &ps,
 					                             &L,
@@ -373,24 +382,23 @@ ccl_device float4 kernel_branched_path_integrate(KernelGlobals *kg, RNG *rng, in
 			for(int j = 0; j < num_samples; j++) {
 				PathState ps = state;
 				Ray pray = ray;
-				ShaderData volume_sd;
 				float3 tp = throughput * num_samples_inv;
 
 				/* branch RNG state */
 				path_state_branch(&ps, j, num_samples);
 
 				VolumeIntegrateResult result = kernel_volume_integrate(
-					kg, &ps, &volume_sd, &volume_ray, &L, &tp, rng, heterogeneous);
+					kg, &ps, &sd, &volume_ray, &L, &tp, rng, heterogeneous);
 
 #ifdef __VOLUME_SCATTER__
 				if(result == VOLUME_PATH_SCATTERED) {
 					/* todo: support equiangular, MIS and all light sampling.
 					 * alternatively get decoupled ray marching working on the GPU */
-					kernel_path_volume_connect_light(kg, rng, &volume_sd, tp, &state, &L);
+					kernel_path_volume_connect_light(kg, rng, &sd, tp, &state, &L);
 
 					if(kernel_path_volume_bounce(kg,
 					                             rng,
-					                             &volume_sd,
+					                             &sd,
 					                             &tp,
 					                             &ps,
 					                             &L,
@@ -440,7 +448,6 @@ ccl_device float4 kernel_branched_path_integrate(KernelGlobals *kg, RNG *rng, in
 		}
 
 		/* setup shading */
-		ShaderData sd;
 		shader_setup_from_ray(kg, &sd, &isect, &ray);
 		shader_eval_surface(kg, &sd, &state, 0.0f, state.flag, SHADER_CONTEXT_MAIN);
 

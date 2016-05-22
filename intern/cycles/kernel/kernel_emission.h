@@ -30,6 +30,9 @@ ccl_device_noinline float3 direct_emissive_eval(KernelGlobals *kg,
 	ShaderData *sd = kg->sd_input;
 #else
 	ShaderData sd_object;
+	ShaderClosure sd_object_closure[MAX_EMISSION_CLOSURE];
+	sd_object.closure = sd_object_closure;
+	sd_object.max_closure = MAX_EMISSION_CLOSURE;
 	ShaderData *sd = &sd_object;
 #endif
 	float3 eval;
@@ -279,20 +282,22 @@ ccl_device_noinline float3 indirect_background(KernelGlobals *kg,
 
 	/* evaluate background closure */
 #  ifdef __SPLIT_KERNEL__
+	ShaderData *sd = kg->sd_input;
 	Ray priv_ray = *ray;
-	shader_setup_from_background(kg, kg->sd_input, &priv_ray);
-
-	path_state_modify_bounce(state, true);
-	float3 L = shader_eval_background(kg, kg->sd_input, state, state->flag, SHADER_CONTEXT_EMISSION);
-	path_state_modify_bounce(state, false);
+	shader_setup_from_background(kg, sd, &priv_ray);
 #  else
-	ShaderData sd;
-	shader_setup_from_background(kg, &sd, ray);
+	ShaderData emission_sd;
+	ShaderClosure emission_sd_closure[MAX_EMISSION_CLOSURE];
+	emission_sd.closure = emission_sd_closure;
+	emission_sd.max_closure = MAX_EMISSION_CLOSURE;
+
+	ShaderData *sd = &emission_sd;
+	shader_setup_from_background(kg, sd, ray);
+#  endif
 
 	path_state_modify_bounce(state, true);
-	float3 L = shader_eval_background(kg, &sd, state, state->flag, SHADER_CONTEXT_EMISSION);
+	float3 L = shader_eval_background(kg, sd, state, state->flag, SHADER_CONTEXT_EMISSION);
 	path_state_modify_bounce(state, false);
-#  endif
 
 #ifdef __BACKGROUND_MIS__
 	/* check if background light exists or if we should skip pdf */

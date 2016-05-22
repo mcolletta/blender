@@ -18,6 +18,7 @@
 
 __kernel void kernel_ocl_path_trace_data_init(
         ccl_global char *globals,
+        ccl_global char *sd,
         ccl_global char *sd_DL_shadow,
         ccl_constant KernelData *data,
         ccl_global float *per_sample_output_buffers,
@@ -54,6 +55,7 @@ __kernel void kernel_ocl_path_trace_data_init(
         int parallel_samples)                        /* Number of samples to be processed in parallel */
 {
 	kernel_data_init((KernelGlobals *)globals,
+	                 (ShaderData *)sd,
 	                 (ShaderData *)sd_DL_shadow,
 	                 data,
 	                 per_sample_output_buffers,

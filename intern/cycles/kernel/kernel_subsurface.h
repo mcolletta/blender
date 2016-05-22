@@ -158,6 +158,8 @@ ccl_device void subsurface_scatter_setup_diffuse_bsdf(ShaderData *sd, float3 wei
 	}
 	else
 		sd->num_closure = 0;
+
+	kernel_assert(sd->num_closure <= MAX_BSSRDF_CLOSURE);
 }
 
 /* optionally do blurring of color and/or bump mapping, at the cost of a shader evaluation */

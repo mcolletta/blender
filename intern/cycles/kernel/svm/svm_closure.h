@@ -60,7 +60,7 @@ ccl_device_inline ShaderClosure *svm_node_closure_get_non_bsdf(ShaderData *sd, C
 {
 	ShaderClosure *sc = ccl_fetch_array(sd, closure, ccl_fetch(sd, num_closure));
 
-	if(ccl_fetch(sd, num_closure) < MAX_CLOSURE) {
+	if(ccl_fetch(sd, num_closure) < ccl_fetch(sd, max_closure)) {
 		sc->weight *= mix_weight;
 		sc->type = type;
 		sc->data0 = 0.0f;
@@ -83,7 +83,7 @@ ccl_device_inline ShaderClosure *svm_node_closure_get_bsdf(ShaderData *sd, float
 	float3 weight = sc->weight * mix_weight;
 	float sample_weight = fabsf(average(weight));
 
-	if(sample_weight > CLOSURE_WEIGHT_CUTOFF && ccl_fetch(sd, num_closure) < MAX_CLOSURE) {
+	if(sample_weight > CLOSURE_WEIGHT_CUTOFF && ccl_fetch(sd, num_closure) < ccl_fetch(sd, max_closure)) {
 		sc->weight = weight;
 		sc->sample_weight = sample_weight;
 		ccl_fetch(sd, num_closure)++;
@@ -103,7 +103,7 @@ ccl_device_inline ShaderClosure *svm_node_closure_get_absorption(ShaderData *sd,
 	float3 weight = (make_float3(1.0f, 1.0f, 1.0f) - sc->weight) * mix_weight;
 	float sample_weight = fabsf(average(weight));
 
-	if(sample_weight > CLOSURE_WEIGHT_CUTOFF && ccl_fetch(sd, num_closure) < MAX_CLOSURE) {
+	if(sample_weight > CLOSURE_WEIGHT_CUTOFF && ccl_fetch(sd, num_closure) < ccl_fetch(sd, max_closure)) {
 		sc->weight = weight;
 		sc->sample_weight = sample_weight;
 		ccl_fetch(sd, num_closure)++;
@@ -287,7 +287,7 @@ ccl_device void svm_node_closure_bsdf(KernelGlobals *kg, ShaderData *sd, float *
 #endif
 
 			/* refraction */
-			if(prev_num_closure + 1 < MAX_CLOSURE) {
+			if(prev_num_closure + 1 < ccl_fetch(sd, max_closure)) {
 				sc = ccl_fetch_array(sd, closure, prev_num_closure + 1);
 				sc->weight = weight;
 				sc->sample_weight = sample_weight;
@@ -452,7 +452,7 @@ ccl_device void svm_node_closure_bsdf(KernelGlobals *kg, ShaderData *sd, float *
 			if(path_flag & PATH_RAY_DIFFUSE_ANCESTOR)
 				param1 = 0.0f;
 
-			if(sample_weight > CLOSURE_WEIGHT_CUTOFF && prev_num_closure+2 < MAX_CLOSURE) {
+			if(sample_weight > CLOSURE_WEIGHT_CUTOFF && prev_num_closure+2 < ccl_fetch(sd, max_closure)) {
 				/* radius * scale */
 				float3 radius = stack_load_float3(stack, data_node.z)*param1;
 				/* sharpness */
@@ -726,7 +726,7 @@ ccl_device void svm_node_closure_ambient_occlusion(ShaderData *sd, float *stack,
 
 ccl_device_inline void svm_node_closure_store_weight(ShaderData *sd, float3 weight)
 {
-	if(ccl_fetch(sd, num_closure) < MAX_CLOSURE) {
+	if(ccl_fetch(sd, num_closure) < ccl_fetch(sd, max_closure)) {
 		ShaderClosure *sc = ccl_fetch_array(sd, closure, ccl_fetch(sd, num_closure));
 		sc->weight = weight;
 	}

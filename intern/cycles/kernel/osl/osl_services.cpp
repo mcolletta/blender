@@ -1148,6 +1148,7 @@ bool OSLRenderServices::trace(TraceOpt &options, OSL::ShaderGlobals *sg,
 	tracedata->setup = false;
 	tracedata->init = true;
 	tracedata->sd.osl_globals = sd->osl_globals;
+	tracedata->sd.max_closure = 0;
 
 	/* raytrace */
 	return scene_intersect(sd->osl_globals, &ray, PATH_RAY_ALL_VISIBILITY, &tracedata->isect, NULL, 0.0f, 0.0f);

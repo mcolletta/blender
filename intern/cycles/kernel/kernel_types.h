@@ -627,13 +627,22 @@ typedef enum AttributeStandard {
 
 #ifdef __MULTI_CLOSURE__
 #  ifndef __MAX_CLOSURE__
-#     define MAX_CLOSURE 64
+#     define MAX_MAIN_CLOSURE     64
+#     define MAX_EMISSION_CLOSURE  2
+#     define MAX_SHADOW_CLOSURE    2
 #  else
-#    define MAX_CLOSURE __MAX_CLOSURE__
+#    define MAX_SPLIT_CLOSURE    __MAX_CLOSURE__
+#    define MAX_MAIN_CLOSURE     __MAX_CLOSURE__
+#    define MAX_SHADOW_CLOSURE   __MAX_CLOSURE__
+#    define MAX_EMISSION_CLOSURE __MAX_CLOSURE__
 #  endif
 #else
-#  define MAX_CLOSURE 1
+#  define MAX_MAIN_CLOSURE     1
+#  define MAX_SHADOW_CLOSURE   1
+#  define MAX_EMISSION_CLOSURE 1
 #endif
+
+#define MAX_BSSRDF_CLOSURE 1
 
 /* This struct is to be 16 bytes aligned, we also keep some extra precautions:
  * - All the float3 members are in the beginning of the struct, so compiler
@@ -807,8 +816,14 @@ typedef ccl_addr_space struct ShaderData {
 	Transform ob_itfm;
 #endif
 
-	/* Closure data, we store a fixed array of closures */
-	struct ShaderClosure closure[MAX_CLOSURE];
+	/* Closure data, we store a fixed array of closures for split kernel
+	 * variable for other kernels */
+#ifdef MAX_SPLIT_CLOSURE
+	struct ShaderClosure closure[MAX_SPLIT_CLOSURE];
+#else
+	struct ShaderClosure *closure;
+#endif
+	int max_closure;
 	int num_closure;
 	float randb_closure;
 
