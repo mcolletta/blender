@@ -99,6 +99,7 @@ void register_node_type_sh_ambient_occlusion(void);
 void register_node_type_sh_background(void);
 void register_node_type_sh_bsdf_diffuse(void);
 void register_node_type_sh_bsdf_glossy(void);
+void register_node_type_sh_bsdf_metallic(void);
 void register_node_type_sh_bsdf_glass(void);
 void register_node_type_sh_bsdf_refraction(void);
 void register_node_type_sh_bsdf_translucent(void);

@@ -222,6 +222,7 @@ shader_node_categories = [
         NodeItem("ShaderNodeBsdfTransparent", poll=object_shader_nodes_poll),
         NodeItem("ShaderNodeBsdfRefraction", poll=object_shader_nodes_poll),
         NodeItem("ShaderNodeBsdfGlass", poll=object_shader_nodes_poll),
+        NodeItem("ShaderNodeBsdfMetallic", poll=object_shader_nodes_poll),
         NodeItem("ShaderNodeBsdfTranslucent", poll=object_shader_nodes_poll),
         NodeItem("ShaderNodeBsdfAnisotropic", poll=object_shader_nodes_poll),
         NodeItem("ShaderNodeBsdfVelvet", poll=object_shader_nodes_poll),

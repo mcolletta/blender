@@ -94,6 +94,10 @@ ccl_device int bsdf_sample(KernelGlobals *kg, const ShaderData *sd, const Shader
 			label = bsdf_microfacet_multi_ggx_glass_sample(kg, sc, ccl_fetch(sd, Ng), ccl_fetch(sd, I), ccl_fetch(sd, dI).dx, ccl_fetch(sd, dI).dy, randu, randv,
 			        eval, omega_in,  &domega_in->dx, &domega_in->dy, pdf);
 			break;
+		case CLOSURE_BSDF_METALLIC_PHYSICAL_ID:
+			label = bsdf_microfacet_metallic_sample(kg, sc, ccl_fetch(sd, Ng), ccl_fetch(sd, I), ccl_fetch(sd, dI).dx, ccl_fetch(sd, dI).dy, randu, randv,
+			        eval, omega_in,  &domega_in->dx, &domega_in->dy, pdf);
+			break;
 		case CLOSURE_BSDF_MICROFACET_BECKMANN_ID:
 		case CLOSURE_BSDF_MICROFACET_BECKMANN_ANISO_ID:
 		case CLOSURE_BSDF_MICROFACET_BECKMANN_REFRACTION_ID:
@@ -187,6 +191,9 @@ ccl_device float3 bsdf_eval(KernelGlobals *kg, const ShaderData *sd, const Shade
 			case CLOSURE_BSDF_MICROFACET_MULTI_GGX_GLASS_ID:
 				eval = bsdf_microfacet_multi_ggx_glass_eval_reflect(sc, ccl_fetch(sd, I), omega_in, pdf);
 				break;
+			case CLOSURE_BSDF_METALLIC_PHYSICAL_ID:
+				eval = bsdf_microfacet_metallic_eval_reflect(sc, ccl_fetch(sd, I), omega_in, pdf);
+				break;
 			case CLOSURE_BSDF_MICROFACET_BECKMANN_ID:
 			case CLOSURE_BSDF_MICROFACET_BECKMANN_ANISO_ID:
 			case CLOSURE_BSDF_MICROFACET_BECKMANN_REFRACTION_ID:
@@ -255,6 +262,9 @@ ccl_device float3 bsdf_eval(KernelGlobals *kg, const ShaderData *sd, const Shade
 			case CLOSURE_BSDF_MICROFACET_MULTI_GGX_GLASS_ID:
 				eval = bsdf_microfacet_multi_ggx_glass_eval_transmit(sc, ccl_fetch(sd, I), omega_in, pdf);
 				break;
+			case CLOSURE_BSDF_METALLIC_PHYSICAL_ID:
+				eval = bsdf_microfacet_metallic_eval_transmit(sc, ccl_fetch(sd, I), omega_in, pdf);
+				break;
 			case CLOSURE_BSDF_MICROFACET_BECKMANN_ID:
 			case CLOSURE_BSDF_MICROFACET_BECKMANN_ANISO_ID:
 			case CLOSURE_BSDF_MICROFACET_BECKMANN_REFRACTION_ID:
@@ -309,6 +319,7 @@ ccl_device void bsdf_blur(KernelGlobals *kg, ShaderClosure *sc, float roughness)
 	switch(sc->type) {
 		case CLOSURE_BSDF_MICROFACET_MULTI_GGX_ID:
 		case CLOSURE_BSDF_MICROFACET_MULTI_GGX_GLASS_ID:
+		case CLOSURE_BSDF_METALLIC_PHYSICAL_ID:
 			bsdf_microfacet_multi_ggx_blur(sc, roughness);
 			break;
 		case CLOSURE_BSDF_MICROFACET_GGX_ID:

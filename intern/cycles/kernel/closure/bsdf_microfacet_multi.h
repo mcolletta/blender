@@ -400,6 +400,125 @@ ccl_device int bsdf_microfacet_multi_ggx_sample(KernelGlobals *kg, const ShaderC
 	return LABEL_REFLECT|LABEL_GLOSSY;
 }
 
+/* Multiscattering GGX Glossy closure with conductive fresnel absorption term */
+
+ccl_device_inline void metallic_artistic_to_physical(float3 &n, float3 &k, float3 refl, float3 edge)
+{
+	float3 one = make_float3(1.0f, 1.0f, 1.0f);
+	//printf("Refl %f %f %f, Edge %f %f %f\n", (double)refl.x, (double)refl.y, (double)refl.z, (double)edge.x, (double)edge.y, (double)edge.z);
+	n = edge * (one-refl)/(one+refl) + (one - edge) * (one+safe_sqrtf3(refl))/(one-safe_sqrtf3(refl));
+	k = safe_sqrtf3((refl*(n+one)*(n+one) - (n-one)*(n-one))/(one-refl));
+	//printf("N %f %f %f, K %f %f %f\n", (double)n.x, (double)n.y, (double)n.z, (double)k.x, (double)k.y, (double)k.z);
+}
+
+ccl_device int bsdf_microfacet_metallic_physical_setup(ShaderClosure *sc, float3 n, float3 k)
+{
+	sc->data0 = clamp(sc->data0, 1e-4f, 1.0f); /* alpha */
+	sc->data1 = sc->data0;
+
+	/* TODO(lukas): This is really bad, but how to store all that data in the ShaderClosure? */
+	float4 f;
+	float4_store_half(((half*) &f), make_float4(n.x, n.y, n.z, 0.0f), 1.0f);
+	float4_store_half(((half*) &f) + 3, make_float4(k.x, k.y, k.z, 0.0f), 1.0f);
+	sc->custom = make_float3(f.x, f.y, f.z);
+
+	sc->type = CLOSURE_BSDF_METALLIC_PHYSICAL_ID;
+
+	return SD_BSDF|SD_BSDF_HAS_EVAL;
+}
+
+ccl_device int bsdf_microfacet_metallic_aniso_physical_setup(ShaderClosure *sc, float3 n, float3 k)
+{
+	sc->data0 = clamp(sc->data0, 1e-4f, 1.0f); /* alpha */
+	sc->data1 = clamp(sc->data1, 1e-4f, 1.0f);
+
+	/* TODO(lukas): This is really bad, but how to store all that data in the ShaderClosure? */
+	float4 f;
+	float4_store_half(((half*) &f), make_float4(n.x, n.y, n.z, 0.0f), 1.0f);
+	float4_store_half(((half*) &f) + 3, make_float4(k.x, k.y, k.z, 0.0f), 1.0f);
+	sc->custom = make_float3(f.x, f.y, f.z);
+
+	sc->type = CLOSURE_BSDF_METALLIC_PHYSICAL_ID;
+
+	return SD_BSDF|SD_BSDF_HAS_EVAL;
+}
+
+ccl_device int bsdf_microfacet_metallic_artistic_setup(ShaderClosure *sc, float3 refl, float3 edge)
+{
+	float3 n, k;
+	metallic_artistic_to_physical(n, k, refl, edge);
+	return bsdf_microfacet_metallic_physical_setup(sc, n, k);
+}
+
+ccl_device int bsdf_microfacet_metallic_aniso_artistic_setup(ShaderClosure *sc, float3 refl, float3 edge)
+{
+	float3 n, k;
+	metallic_artistic_to_physical(n, k, refl, edge);
+	return bsdf_microfacet_metallic_aniso_physical_setup(sc, n, k);
+}
+
+ccl_device float3 bsdf_microfacet_metallic_eval_transmit(const ShaderClosure *sc, const float3 I, const float3 omega_in, float *pdf) {
+	*pdf = 0.0f;
+	return make_float3(0.0f, 0.0f, 0.0f);
+}
+
+ccl_device float3 bsdf_microfacet_metallic_eval_reflect(const ShaderClosure *sc, const float3 I, const float3 omega_in, float *pdf) {
+	float4 f, temp;
+	f = make_float4(sc->custom.x, sc->custom.y, sc->custom.z, 0.0f);
+	float3 n, k;
+	temp = half4_to_float4(((half*) &f));
+	n = make_float3(temp.x, temp.y, temp.z);
+	temp = half4_to_float4(((half*) &f) + 3);
+	k = make_float3(temp.x, temp.y, temp.z);
+
+	float3 X, Y, Z;
+	Z = sc->N;
+	if(sc->data0 == sc->data1)
+		make_orthonormals(Z, &X, &Y);
+	else
+		make_orthonormals_tangent(Z, sc->T, &X, &Y);
+
+	/* TODO(lukas): Swap I and O? */
+	float3 localI = make_float3(dot(I, X), dot(I, Y), dot(I, Z));
+	float3 localO = make_float3(dot(omega_in, X), dot(omega_in, Y), dot(omega_in, Z));
+	uint seed = hash_float3(I) ^ hash_float3(omega_in) ^ hash_float3(make_float3(sc->data0, sc->data1, sc->data2));
+
+	*pdf = mf_ggx_pdf(localI, localO, sc->data0);
+	if(localI.z < localO.z)
+		return mf_eval_glossy(localI, localO, true, make_float3(1.0f, 1.0f, 1.0f), sc->data0, sc->data1, seed, &n, &k);
+	else
+		return mf_eval_glossy(localO, localI, true, make_float3(1.0f, 1.0f, 1.0f), sc->data0, sc->data1, seed, &n, &k) * localO.z / localI.z;
+}
+
+ccl_device int bsdf_microfacet_metallic_sample(KernelGlobals *kg, const ShaderClosure *sc, float3 Ng, float3 I, float3 dIdx, float3 dIdy, float randu, float randv, float3 *eval, float3 *omega_in, float3 *domega_in_dx, float3 *domega_in_dy, float *pdf)
+{
+	float4 f, temp;
+	f = make_float4(sc->custom.x, sc->custom.y, sc->custom.z, 0.0f);
+	float3 n, k;
+	temp = half4_to_float4(((half*) &f));
+	n = make_float3(temp.x, temp.y, temp.z);
+	temp = half4_to_float4(((half*) &f) + 3);
+	k = make_float3(temp.x, temp.y, temp.z);
+
+	float3 X, Y, Z;
+	Z = sc->N;
+	if(sc->data0 == sc->data1)
+		make_orthonormals(Z, &X, &Y);
+	else
+		make_orthonormals_tangent(Z, sc->T, &X, &Y);
+
+	float3 localI = make_float3(dot(I, X), dot(I, Y), dot(I, Z));
+	float3 localO;
+	uint seed = __float_as_uint(randu);
+
+	*eval = mf_sample_glossy(localI, localO, make_float3(1.0f, 1.0f, 1.0f), sc->data0, sc->data1, seed, &n, &k);
+	*pdf = mf_ggx_pdf(localI, localO, sc->data0);
+	*eval *= *pdf;
+
+	*omega_in = X*localO.x + Y*localO.y + Z*localO.z;
+	return LABEL_REFLECT|LABEL_GLOSSY;
+}
+
 /* Multiscattering GGX Glass closure */
 
 ccl_device int bsdf_microfacet_multi_ggx_glass_setup(ShaderClosure *sc)

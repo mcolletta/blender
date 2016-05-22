@@ -2991,6 +2991,15 @@ static void rna_ShaderNodeSubsurface_update(Main *bmain, Scene *scene, PointerRN
 	rna_Node_update(bmain, scene, ptr);
 }
 
+static void rna_ShaderNodeMetallic_update(Main *bmain, Scene *scene, PointerRNA *ptr)
+{
+	bNodeTree *ntree = (bNodeTree *)ptr->id.data;
+	bNode *node = (bNode *)ptr->data;
+
+	nodeUpdate(ntree, node);
+	rna_Node_update(bmain, scene, ptr);
+}
+
 static void rna_CompositorNodeScale_update(Main *bmain, Scene *scene, PointerRNA *ptr)
 {
 	bNodeTree *ntree = (bNodeTree *)ptr->id.data;
@@ -3201,6 +3210,12 @@ static EnumPropertyItem node_anisotropic_items[] = {
 	{SHD_GLOSSY_GGX,               "GGX",               0, "GGX",      ""},
 	{SHD_GLOSSY_MULTI_GGX,         "MULTI_GGX",         0, "Multiscatter GGX", ""},
 	{SHD_GLOSSY_ASHIKHMIN_SHIRLEY, "ASHIKHMIN_SHIRLEY", 0, "Ashikhmin-Shirley", ""},
+	{0, NULL, 0, NULL, NULL}
+};
+
+static EnumPropertyItem node_metallic_items[] = {
+	{SHD_METALLIC_PHYSICAL,	       "PHYSICAL",          0, "Physical", ""},
+	{SHD_METALLIC_ARTISTIC,        "ARTISTIC",          0, "Artistic", ""},
 	{0, NULL, 0, NULL, NULL}
 };
 
@@ -4148,6 +4163,17 @@ static void def_glossy(StructRNA *srna)
 	RNA_def_property_enum_items(prop, node_glossy_items);
 	RNA_def_property_ui_text(prop, "Distribution", "");
 	RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_update");
+}
+
+static void def_metallic(StructRNA *srna)
+{
+	PropertyRNA *prop;
+	
+	prop = RNA_def_property(srna, "model", PROP_ENUM, PROP_NONE);
+	RNA_def_property_enum_sdna(prop, NULL, "custom1");
+	RNA_def_property_enum_items(prop, node_metallic_items);
+	RNA_def_property_ui_text(prop, "Model", "");
+	RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_ShaderNodeMetallic_update");
 }
 
 static void def_glass(StructRNA *srna)

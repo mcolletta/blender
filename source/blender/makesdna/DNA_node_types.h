@@ -915,6 +915,10 @@ typedef struct NodeSunBeams {
 #define SHD_GLOSSY_ASHIKHMIN_SHIRLEY			3
 #define SHD_GLOSSY_MULTI_GGX				4
 
+/* metallic distribution */
+#define SHD_METALLIC_PHYSICAL				0
+#define SHD_METALLIC_ARTISTIC				1
+
 /* vector transform */
 #define SHD_VECT_TRANSFORM_TYPE_VECTOR	0
 #define SHD_VECT_TRANSFORM_TYPE_POINT	1

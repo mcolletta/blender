@@ -489,6 +489,19 @@ static ShaderNode *add_node(Scene *scene,
 		}
 		node = glass;
 	}
+	else if(b_node.is_a(&RNA_ShaderNodeBsdfMetallic)) {
+		BL::ShaderNodeBsdfMetallic b_metallic_node(b_node);
+		MetallicBsdfNode *metallic = new MetallicBsdfNode();
+		switch(b_metallic_node.model()) {
+		case BL::ShaderNodeBsdfMetallic::model_ARTISTIC:
+			metallic->model = ustring("Artistic");
+			break;
+		case BL::ShaderNodeBsdfMetallic::model_PHYSICAL:
+			metallic->model = ustring("Physical");
+			break;
+		}
+		node = metallic;
+	}
 	else if(b_node.is_a(&RNA_ShaderNodeBsdfRefraction)) {
 		BL::ShaderNodeBsdfRefraction b_refraction_node(b_node);
 		RefractionBsdfNode *refraction = new RefractionBsdfNode();

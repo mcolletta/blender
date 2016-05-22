@@ -441,6 +441,15 @@ public:
 	static ShaderEnum distribution_enum;
 };
 
+class MetallicBsdfNode : public BsdfNode {
+public:
+	SHADER_NODE_CLASS(MetallicBsdfNode)
+
+	ustring model;
+
+	void attributes(Shader *shader, AttributeRequestSet *attributes);
+};
+
 class GlassBsdfNode : public BsdfNode {
 public:
 	SHADER_NODE_CLASS(GlassBsdfNode)

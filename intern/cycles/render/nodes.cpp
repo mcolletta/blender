@@ -1903,6 +1903,97 @@ void GlossyBsdfNode::compile(OSLCompiler& compiler)
 	compiler.add(this, "node_glossy_bsdf");
 }
 
+/* Metallic BSDF Closure */
+
+MetallicBsdfNode::MetallicBsdfNode()
+{
+	special_type = SHADER_SPECIAL_TYPE_CLOSURE;
+
+	add_input("Normal", SHADER_SOCKET_NORMAL, ShaderInput::NORMAL);
+	add_input("Tangent", SHADER_SOCKET_VECTOR, ShaderInput::TANGENT);
+	add_input("SurfaceMixWeight", SHADER_SOCKET_FLOAT, 0.0f, ShaderInput::USE_SVM);
+	add_output("BSDF", SHADER_SOCKET_CLOSURE);
+
+	model = ustring("Artistic");
+
+	add_input("Roughness", SHADER_SOCKET_FLOAT, 0.2f);
+	add_input("Anisotropy", SHADER_SOCKET_FLOAT, 0.0f);
+	add_input("Rotation", SHADER_SOCKET_FLOAT, 0.0f);
+
+	add_input("N", SHADER_SOCKET_VECTOR, make_float3(0.0f, 0.0f, 0.0f));
+	add_input("K", SHADER_SOCKET_VECTOR, make_float3(0.0f, 0.0f, 0.0f));
+	add_input("Reflectivity", SHADER_SOCKET_COLOR, make_float3(0.8f, 0.8f, 0.8f));
+	add_input("Edge Tint", SHADER_SOCKET_COLOR, make_float3(0.8f, 0.8f, 0.8f));
+}
+
+void MetallicBsdfNode::attributes(Shader *shader, AttributeRequestSet *attributes)
+{
+	if(shader->has_surface) {
+		ShaderInput *tangent_in = input("Tangent");
+		ShaderInput *anisotropy_in = input("Anisotropy");
+
+		if(!tangent_in->link && (anisotropy_in->link || fabsf(anisotropy_in->value.x) > 1e-4f))
+			attributes->add(ATTR_STD_GENERATED);
+	}
+
+	ShaderNode::attributes(shader, attributes);
+}
+
+void MetallicBsdfNode::compile(SVMCompiler& compiler)
+{
+	ShaderInput *normal_in = input("Normal");
+	ShaderInput *roughness_in = input("Roughness");
+	ShaderInput *anisotropy_in = input("Anisotropy");
+
+	bool use_artistic = (model == ustring("Artistic"));
+
+	ShaderInput *param1 = use_artistic? input("Reflectivity"): input("N");
+	ShaderInput *param2 = use_artistic? input("Edge Tint"): input("K");
+
+	int normal_offset = compiler.stack_assign_if_linked(normal_in);
+	int param1_offset = compiler.stack_assign(param1);
+	int param2_offset = compiler.stack_assign(param2);
+
+	compiler.add_node(NODE_CLOSURE_SET_WEIGHT, make_float3(1.0f, 1.0f, 1.0f));
+
+	if(anisotropy_in->link || fabsf(anisotropy_in->value.x) > 1e-4f) {
+		ShaderInput *tangent_in = input("Tangent");
+		ShaderInput *rotation_in = input("Rotation");
+
+		int tangent_offset = compiler.stack_assign_if_linked(tangent_in);
+		int rotation_offset = compiler.stack_assign(rotation_in);
+
+		compiler.add_node(NODE_CLOSURE_BSDF,
+			compiler.encode_uchar4(use_artistic? CLOSURE_BSDF_METALLIC_ANISO_ARTISTIC_ID
+			                                   : CLOSURE_BSDF_METALLIC_ANISO_PHYSICAL_ID,
+			                       compiler.stack_assign(roughness_in),
+			                       compiler.stack_assign(anisotropy_in),
+			                       compiler.closure_mix_weight_offset()),
+			__float_as_int(roughness_in->value.x),
+			__float_as_int(anisotropy_in->value.x));
+
+		compiler.add_node(normal_offset, tangent_offset, rotation_offset, SVM_STACK_INVALID);
+		compiler.add_node(param1_offset, param2_offset, SVM_STACK_INVALID, SVM_STACK_INVALID);
+	}
+	else {
+		compiler.add_node(NODE_CLOSURE_BSDF,
+			compiler.encode_uchar4(use_artistic? CLOSURE_BSDF_METALLIC_ARTISTIC_ID
+			                                   : CLOSURE_BSDF_METALLIC_PHYSICAL_ID,
+			                       compiler.stack_assign(roughness_in),
+			                       SVM_STACK_INVALID,
+			                       compiler.closure_mix_weight_offset()),
+			__float_as_int(roughness_in->value.x),
+			__float_as_int(0.0f));
+
+		compiler.add_node(normal_offset, SVM_STACK_INVALID, param1_offset, param2_offset);
+	}
+}
+
+void MetallicBsdfNode::compile(OSLCompiler& compiler)
+{
+	/* TODO(lukas): Implement in OSL. */
+}
+
 /* Glass BSDF Closure */
 
 static ShaderEnum glass_distribution_init()

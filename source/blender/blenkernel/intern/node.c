@@ -3674,6 +3674,7 @@ static void registerShaderNodes(void)
 	register_node_type_sh_bsdf_diffuse();
 	register_node_type_sh_bsdf_glossy();
 	register_node_type_sh_bsdf_glass();
+	register_node_type_sh_bsdf_metallic();
 	register_node_type_sh_bsdf_translucent();
 	register_node_type_sh_bsdf_transparent();
 	register_node_type_sh_bsdf_velvet();

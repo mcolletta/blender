@@ -1279,6 +1279,11 @@ ccl_device_inline float safe_sqrtf(float f)
 	return sqrtf(max(f, 0.0f));
 }
 
+ccl_device_inline float3 safe_sqrtf3(float3 f)
+{
+	return make_float3(safe_sqrtf(f.x), safe_sqrtf(f.y), safe_sqrtf(f.z));
+}
+
 ccl_device float safe_asinf(float a)
 {
 	return asinf(clamp(a, -1.0f, 1.0f));

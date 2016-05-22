@@ -81,6 +81,7 @@ DefNode( ShaderNode,     SH_NODE_HOLDOUT,            0,                      "HO
 DefNode( ShaderNode,     SH_NODE_BSDF_ANISOTROPIC,   def_anisotropic,        "BSDF_ANISOTROPIC",   BsdfAnisotropic,  "Anisotropic BSDF",  ""       )
 DefNode( ShaderNode,     SH_NODE_BSDF_DIFFUSE,       0,                      "BSDF_DIFFUSE",       BsdfDiffuse,      "Diffuse BSDF",      ""       )
 DefNode( ShaderNode,     SH_NODE_BSDF_GLOSSY,        def_glossy,             "BSDF_GLOSSY",        BsdfGlossy,       "Glossy BSDF",       ""       )
+DefNode( ShaderNode,     SH_NODE_BSDF_METALLIC,      def_metallic,           "BSDF_METALLIC",      BsdfMetallic,     "Metallic BSDF",     ""       )
 DefNode( ShaderNode,     SH_NODE_BSDF_GLASS,         def_glass,              "BSDF_GLASS",         BsdfGlass,        "Glass BSDF",        ""       )
 DefNode( ShaderNode,     SH_NODE_BSDF_REFRACTION,    def_glass,              "BSDF_REFRACTION",    BsdfRefraction,   "Refraction BSDF",   ""       )
 DefNode( ShaderNode,     SH_NODE_BSDF_TRANSLUCENT,   0,                      "BSDF_TRANSLUCENT",   BsdfTranslucent,  "Translucent BSDF",  ""       )

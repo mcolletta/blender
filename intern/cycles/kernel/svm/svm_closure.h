@@ -218,6 +218,80 @@ ccl_device void svm_node_closure_bsdf(KernelGlobals *kg, ShaderData *sd, float *
 
 			break;
 		}
+		case CLOSURE_BSDF_METALLIC_ARTISTIC_ID:
+		case CLOSURE_BSDF_METALLIC_PHYSICAL_ID: {
+#ifdef __CAUSTICS_TRICKS__
+			if(!kernel_data.integrator.caustics_reflective && (path_flag & PATH_RAY_DIFFUSE))
+				break;
+#endif
+			ShaderClosure *sc = svm_node_closure_get_bsdf(sd, mix_weight);
+
+			if(sc) {
+				sc->N = N;
+				sc->data0 = param1;
+				sc->data1 = param1;
+				sc->data2 = 0.0f;
+
+				kernel_assert(stack_valid(data_node.z) && stack_valid(data_node.w));
+				float3 metal_param1 = stack_load_float3(stack, data_node.z);
+				float3 metal_param2 = stack_load_float3(stack, data_node.w);
+
+				/* setup bsdf */
+				if(type == CLOSURE_BSDF_METALLIC_ARTISTIC_ID)
+					ccl_fetch(sd, flag) |= bsdf_microfacet_metallic_artistic_setup(sc, metal_param1, metal_param2);
+				else
+					ccl_fetch(sd, flag) |= bsdf_microfacet_metallic_physical_setup(sc, metal_param1, metal_param2);
+			}
+
+			break;
+		}
+		case CLOSURE_BSDF_METALLIC_ANISO_ARTISTIC_ID:
+		case CLOSURE_BSDF_METALLIC_ANISO_PHYSICAL_ID: {
+#ifdef __CAUSTICS_TRICKS__
+			if(!kernel_data.integrator.caustics_reflective && (path_flag & PATH_RAY_DIFFUSE))
+				break;
+#endif
+			ShaderClosure *sc = svm_node_closure_get_bsdf(sd, mix_weight);
+
+			if(sc) {
+				sc->N = N;
+				sc->T = stack_load_float3(stack, data_node.y);
+
+				/* rotate tangent */
+				float rotation = stack_load_float(stack, data_node.z);
+
+				if(rotation != 0.0f)
+					sc->T = rotate_around_axis(sc->T, sc->N, rotation * M_2PI_F);
+
+				/* compute roughness */
+				float roughness = param1;
+				float anisotropy = clamp(param2, -0.99f, 0.99f);
+
+				if(anisotropy < 0.0f) {
+					sc->data0 = roughness/(1.0f + anisotropy);
+					sc->data1 = roughness*(1.0f + anisotropy);
+				}
+				else {
+					sc->data0 = roughness*(1.0f - anisotropy);
+					sc->data1 = roughness/(1.0f - anisotropy);
+				}
+
+				sc->data2 = 0.0f;
+
+				uint4 param_node = read_node(kg, offset);
+				kernel_assert(stack_valid(param_node.x) && stack_valid(param_node.y));
+				float3 metal_param1 = stack_load_float3(stack, param_node.x);
+				float3 metal_param2 = stack_load_float3(stack, param_node.y);
+
+				/* setup bsdf */
+				if(type == CLOSURE_BSDF_METALLIC_ANISO_ARTISTIC_ID)
+					ccl_fetch(sd, flag) |= bsdf_microfacet_metallic_aniso_artistic_setup(sc, metal_param1, metal_param2);
+				else
+					ccl_fetch(sd, flag) |= bsdf_microfacet_metallic_aniso_physical_setup(sc, metal_param1, metal_param2);
+			}
+
+			break;
+		}
 		case CLOSURE_BSDF_REFRACTION_ID:
 		case CLOSURE_BSDF_MICROFACET_GGX_REFRACTION_ID:
 		case CLOSURE_BSDF_MICROFACET_BECKMANN_REFRACTION_ID: {

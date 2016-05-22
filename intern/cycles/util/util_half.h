@@ -30,6 +30,7 @@ CCL_NAMESPACE_BEGIN
 #ifdef __KERNEL_OPENCL__
 
 #define float4_store_half(h, f, scale) vstore_half4(f * (scale), 0, h);
+#define half4_to_float4(h) vload_half4(0, h)
 
 #else
 
@@ -44,6 +45,11 @@ ccl_device_inline void float4_store_half(half *h, float4 f, float scale)
 	h[1] = __float2half_rn(f.y * scale);
 	h[2] = __float2half_rn(f.z * scale);
 	h[3] = __float2half_rn(f.w * scale);
+}
+
+ccl_device_inline float4 half4_to_float4(half *h)
+{
+	return make_float4(__half2float(h[0]), __half2float(h[1]), __half2float(h[2]), __half2float(h[3]));
 }
 
 #else
@@ -83,6 +89,14 @@ ccl_device_inline void float4_store_half(half *h, float4 f, float scale)
 
 	_mm_storel_pi((__m64*)h, _mm_castsi128_ps(rpack));
 #endif
+}
+
+ccl_device_inline float4 half4_to_float4(half *h)
+{
+	float4 f;
+	for(int i = 0; i < 4; i++)
+		*((int*) &f[i]) = ((h[i] & 0x8000) << 16) | (((h[i] & 0x7c00) + 0x1C000) << 13) | ((h[i] & 0x03FF) << 13);
+	return f;
 }
 
 #endif
