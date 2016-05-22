@@ -25,6 +25,7 @@
 
 #include "closure/bsdf_diffuse.h"
 #include "closure/bssrdf.h"
+#include "closure/merge.h"
 
 #include "osl_bssrdf.h"
 #include "osl_closures.h"
@@ -206,6 +207,7 @@ static void flatten_surface_closure_tree(ShaderData *sd, int path_flag,
 						if(sc.sample_weight > CLOSURE_WEIGHT_CUTOFF && sd->num_closure < MAX_CLOSURE) {
 							sd->closure[sd->num_closure++] = sc;
 							sd->flag |= bsdf->shaderdata_flag();
+							shader_merge_last_closure_with_data(sd);
 						}
 						break;
 					}
@@ -223,6 +225,7 @@ static void flatten_surface_closure_tree(ShaderData *sd, int path_flag,
 						/* flag */
 						if(sd->num_closure < MAX_CLOSURE) {
 							sd->closure[sd->num_closure++] = sc;
+							shader_merge_last_closure_without_data(sd);
 							sd->flag |= SD_EMISSION;
 						}
 						break;
@@ -240,6 +243,7 @@ static void flatten_surface_closure_tree(ShaderData *sd, int path_flag,
 
 						if(sd->num_closure < MAX_CLOSURE) {
 							sd->closure[sd->num_closure++] = sc;
+							shader_merge_last_closure_without_data(sd);
 							sd->flag |= SD_AO;
 						}
 						break;
@@ -254,6 +258,7 @@ static void flatten_surface_closure_tree(ShaderData *sd, int path_flag,
 
 						if(sd->num_closure < MAX_CLOSURE) {
 							sd->closure[sd->num_closure++] = sc;
+							shader_merge_last_closure_without_data(sd);
 							sd->flag |= SD_HOLDOUT;
 						}
 						break;
@@ -452,6 +457,7 @@ static void flatten_volume_closure_tree(ShaderData *sd,
 						{
 							sd->closure[sd->num_closure++] = sc;
 							sd->flag |= volume->shaderdata_flag();
+							shader_merge_last_closure_with_data(sd);
 						}
 						break;
 					}
@@ -469,6 +475,7 @@ static void flatten_volume_closure_tree(ShaderData *sd,
 						if(sd->num_closure < MAX_CLOSURE) {
 							sd->closure[sd->num_closure++] = sc;
 							sd->flag |= SD_EMISSION;
+							shader_merge_last_closure_without_data(sd);
 						}
 						break;
 					}

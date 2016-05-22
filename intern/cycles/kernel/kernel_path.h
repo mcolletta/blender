@@ -253,9 +253,6 @@ ccl_device void kernel_path_indirect(KernelGlobals *kg,
 		                      ray);
 		float rbsdf = path_state_rng_1D_for_decision(kg, rng, state, PRNG_BSDF);
 		shader_eval_surface(kg, &sd, state, rbsdf, state->flag, SHADER_CONTEXT_INDIRECT);
-#ifdef __BRANCHED_PATH__
-		shader_merge_closures(&sd);
-#endif
 
 		/* blurring of bsdf after bounces, for rays that have a small likelihood
 		 * of following this particular path (diffuse, rough glossy) */

@@ -27,6 +27,7 @@
 #include "closure/bsdf_util.h"
 #include "closure/bsdf.h"
 #include "closure/emissive.h"
+#include "closure/merge.h"
 
 #include "svm/svm.h"
 
@@ -438,51 +439,6 @@ ccl_device_inline void shader_setup_from_volume(KernelGlobals *kg, ShaderData *s
 	/* for NDC coordinates */
 	sd->ray_P = ray->P;
 	sd->ray_dP = ray->dP;
-}
-#endif
-
-/* Merging */
-
-#if defined(__BRANCHED_PATH__) || defined(__VOLUME__)
-ccl_device void shader_merge_closures(ShaderData *sd)
-{
-	/* merge identical closures, better when we sample a single closure at a time */
-	for(int i = 0; i < sd->num_closure; i++) {
-		ShaderClosure *sci = &sd->closure[i];
-
-		for(int j = i + 1; j < sd->num_closure; j++) {
-			ShaderClosure *scj = &sd->closure[j];
-
-#ifdef __OSL__
-			if(sci->prim || scj->prim)
-				continue;
-#endif
-
-			if(!(sci->type == scj->type && sci->data0 == scj->data0 && sci->data1 == scj->data1 && sci->data2 == scj->data2))
-				continue;
-
-			if(CLOSURE_IS_BSDF_OR_BSSRDF(sci->type)) {
-				if(sci->N != scj->N)
-					continue;
-				else if(CLOSURE_IS_BSDF_ANISOTROPIC(sci->type) && sci->T != scj->T)
-					continue;
-			}
-
-			sci->weight += scj->weight;
-			sci->sample_weight += scj->sample_weight;
-
-			int size = sd->num_closure - (j+1);
-			if(size > 0) {
-				for(int k = 0; k < size; k++) {
-					scj[k] = scj[k+1];
-				}
-			}
-
-			sd->num_closure--;
-			kernel_assert(sd->num_closure >= 0);
-			j--;
-		}
-	}
 }
 #endif
 
@@ -1030,10 +986,6 @@ ccl_device void shader_eval_volume(KernelGlobals *kg, ShaderData *sd,
 			svm_eval_nodes(kg, sd, state, SHADER_TYPE_VOLUME, path_flag);
 		}
 #endif
-
-		/* merge closures to avoid exceeding number of closures limit */
-		if(i > 0)
-			shader_merge_closures(sd);
 	}
 }
 

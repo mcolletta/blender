@@ -87,6 +87,7 @@ set(SRC_CLOSURE_HEADERS
 	closure/bsdf_hair.h
 	closure/bssrdf.h
 	closure/emissive.h
+	closure/merge.h
 	closure/volume.h
 )
 
