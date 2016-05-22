@@ -418,7 +418,7 @@ public:
 	SHADER_NODE_CLASS(TranslucentBsdfNode)
 };
 
-class TransparentBsdfNode : public BsdfNode {
+class TransparentBsdfNode : public ShaderNode {
 public:
 	SHADER_NODE_CLASS(TransparentBsdfNode)
 

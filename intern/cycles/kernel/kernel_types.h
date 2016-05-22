@@ -300,6 +300,9 @@ enum PathRayFlag {
 	PATH_RAY_MIS_SKIP = 2048,
 	PATH_RAY_DIFFUSE_ANCESTOR = 4096,
 	PATH_RAY_SINGLE_PASS_DONE = 8192,
+
+	/* are we evaluating shaders in a context where only emission is needed? */
+	PATH_RAY_EMISSION = 16384,
 };
 
 /* Closure Label */
@@ -683,7 +686,7 @@ typedef enum ShaderContext {
 enum ShaderDataFlag {
 	/* runtime flags */
 	SD_BACKFACING     = (1 << 0),   /* backside of surface? */
-	SD_EMISSION       = (1 << 1),   /* have emissive closure? */
+	SD_EMISSION       = (1 << 1),   /* have emissive or background closure? */
 	SD_BSDF           = (1 << 2),   /* have bsdf closure? */
 	SD_BSDF_HAS_EVAL  = (1 << 3),   /* have non-singular bsdf closure? */
 	SD_BSSRDF         = (1 << 4),   /* have bssrdf */

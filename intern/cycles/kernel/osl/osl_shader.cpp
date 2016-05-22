@@ -179,6 +179,15 @@ static void flatten_surface_closure_tree(ShaderData *sd, int path_flag,
 						CBSDFClosure *bsdf = (CBSDFClosure *)prim;
 						int scattering = bsdf->scattering();
 
+						if(bsdf->sc.type == CLOSURE_BSDF_TRANSPARENT_ID) {
+							if(path_flag & PATH_RAY_EMISSION) {
+								return;
+							}
+						}
+						else if(path_flag & (PATH_RAY_SHADOW|PATH_RAY_EMISSION)) {
+							return;
+						}
+
 						/* caustic options */
 						if((scattering & LABEL_GLOSSY) && (path_flag & PATH_RAY_DIFFUSE)) {
 							KernelGlobals *kg = sd->osl_globals;
@@ -212,6 +221,10 @@ static void flatten_surface_closure_tree(ShaderData *sd, int path_flag,
 						break;
 					}
 					case CClosurePrimitive::Emissive: {
+						if(path_flag & PATH_RAY_SHADOW) {
+							return;
+						}
+
 						/* sample weight */
 						float sample_weight = fabsf(average(weight));
 
@@ -231,6 +244,10 @@ static void flatten_surface_closure_tree(ShaderData *sd, int path_flag,
 						break;
 					}
 					case CClosurePrimitive::AmbientOcclusion: {
+						if(path_flag & (PATH_RAY_SHADOW|PATH_RAY_EMISSION)) {
+							return;
+						}
+
 						/* sample weight */
 						float sample_weight = fabsf(average(weight));
 
@@ -249,6 +266,10 @@ static void flatten_surface_closure_tree(ShaderData *sd, int path_flag,
 						break;
 					}
 					case CClosurePrimitive::Holdout: {
+						if(path_flag & (PATH_RAY_SHADOW|PATH_RAY_EMISSION)) {
+							return;
+						}
+
 						sc.sample_weight = 0.0f;
 						sc.type = CLOSURE_HOLDOUT_ID;
 						sc.data0 = 0.0f;
@@ -264,6 +285,10 @@ static void flatten_surface_closure_tree(ShaderData *sd, int path_flag,
 						break;
 					}
 					case CClosurePrimitive::BSSRDF: {
+						if(path_flag & (PATH_RAY_SHADOW|PATH_RAY_EMISSION)) {
+							return;
+						}
+
 						CBSSRDFClosure *bssrdf = (CBSSRDFClosure *)prim;
 						float sample_weight = fabsf(average(weight));
 
@@ -408,7 +433,7 @@ float3 OSLShader::eval_background(KernelGlobals *kg, ShaderData *sd, PathState *
 
 /* Volume */
 
-static void flatten_volume_closure_tree(ShaderData *sd,
+static void flatten_volume_closure_tree(ShaderData *sd, int path_flag,
                                         const OSL::ClosureColor *closure, float3 weight = make_float3(1.0f, 1.0f, 1.0f))
 {
 	/* OSL gives us a closure tree, we flatten it into arrays per
@@ -417,13 +442,13 @@ static void flatten_volume_closure_tree(ShaderData *sd,
 	switch(closure->id) {
 		case OSL::ClosureColor::MUL: {
 			OSL::ClosureMul *mul = (OSL::ClosureMul *)closure;
-			flatten_volume_closure_tree(sd, mul->closure, TO_FLOAT3(mul->weight) * weight);
+			flatten_volume_closure_tree(sd, path_flag, mul->closure, TO_FLOAT3(mul->weight) * weight);
 			break;
 		}
 		case OSL::ClosureColor::ADD: {
 			OSL::ClosureAdd *add = (OSL::ClosureAdd *)closure;
-			flatten_volume_closure_tree(sd, add->closureA, weight);
-			flatten_volume_closure_tree(sd, add->closureB, weight);
+			flatten_volume_closure_tree(sd, path_flag, add->closureA, weight);
+			flatten_volume_closure_tree(sd, path_flag, add->closureB, weight);
 			break;
 		}
 		default: {
@@ -451,6 +476,14 @@ static void flatten_volume_closure_tree(ShaderData *sd,
 						sc.data0 = volume->sc.data0;
 						sc.data1 = volume->sc.data1;
 
+						if(path_flag & PATH_RAY_EMISSION) {
+							return;
+						}
+						else if(path_flag & PATH_RAY_SHADOW) {
+							// save closures space for shadow rays
+							sc.type = CLOSURE_VOLUME_ABSORPTION_ID;
+						}
+
 						/* add */
 						if((sc.sample_weight > CLOSURE_WEIGHT_CUTOFF) &&
 						   (sd->num_closure < MAX_CLOSURE))
@@ -462,6 +495,10 @@ static void flatten_volume_closure_tree(ShaderData *sd,
 						break;
 					}
 					case CClosurePrimitive::Emissive: {
+						if(path_flag & PATH_RAY_SHADOW) {
+							return;
+						}
+
 						/* sample weight */
 						float sample_weight = fabsf(average(weight));
 
@@ -510,7 +547,7 @@ void OSLShader::eval_volume(KernelGlobals *kg, ShaderData *sd, PathState *state,
 	
 	/* flatten closure tree */
 	if(globals->Ci)
-		flatten_volume_closure_tree(sd, globals->Ci);
+		flatten_volume_closure_tree(sd, path_flag, globals->Ci);
 }
 
 /* Displacement */

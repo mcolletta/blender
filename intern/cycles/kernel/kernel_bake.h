@@ -463,7 +463,7 @@ ccl_device void kernel_bake_evaluate(KernelGlobals *kg, ccl_global uint4 *input,
 
 			/* evaluate */
 			int flag = 0; /* we can't know which type of BSDF this is for */
-			out = shader_eval_background(kg, &sd, &state, flag, SHADER_CONTEXT_MAIN);
+			out = shader_eval_background(kg, &sd, &state, flag, SHADER_CONTEXT_EMISSION);
 			break;
 		}
 		default:
@@ -535,7 +535,7 @@ ccl_device void kernel_shader_evaluate(KernelGlobals *kg,
 
 		/* evaluate */
 		int flag = 0; /* we can't know which type of BSDF this is for */
-		out = shader_eval_background(kg, &sd, &state, flag, SHADER_CONTEXT_MAIN);
+		out = shader_eval_background(kg, &sd, &state, flag, SHADER_CONTEXT_EMISSION);
 	}
 	
 	/* write output */

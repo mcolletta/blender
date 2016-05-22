@@ -207,11 +207,14 @@ ccl_device_noinline void svm_eval_nodes(KernelGlobals *kg, ShaderData *sd, ccl_a
 			case NODE_CLOSURE_BSDF:
 				svm_node_closure_bsdf(kg, sd, stack, node, path_flag, &offset);
 				break;
+			case NODE_CLOSURE_TRANSPARENT:
+				svm_node_closure_transparent(sd, stack, node, path_flag);
+				break;
 			case NODE_CLOSURE_EMISSION:
-				svm_node_closure_emission(sd, stack, node);
+				svm_node_closure_emission(sd, stack, node, path_flag);
 				break;
 			case NODE_CLOSURE_BACKGROUND:
-				svm_node_closure_background(sd, stack, node);
+				svm_node_closure_background(sd, stack, node, path_flag);
 				break;
 			case NODE_CLOSURE_SET_WEIGHT:
 				svm_node_closure_set_weight(sd, node.y, node.z, node.w);
@@ -302,10 +305,10 @@ ccl_device_noinline void svm_eval_nodes(KernelGlobals *kg, ShaderData *sd, ccl_a
 
 #if NODES_GROUP(NODE_GROUP_LEVEL_1)
 			case NODE_CLOSURE_HOLDOUT:
-				svm_node_closure_holdout(sd, stack, node);
+				svm_node_closure_holdout(sd, stack, node, path_flag);
 				break;
 			case NODE_CLOSURE_AMBIENT_OCCLUSION:
-				svm_node_closure_ambient_occlusion(sd, stack, node);
+				svm_node_closure_ambient_occlusion(sd, stack, node, path_flag);
 				break;
 			case NODE_FRESNEL:
 				svm_node_fresnel(sd, stack, node.y, node.z, node.w);

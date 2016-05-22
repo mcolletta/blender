@@ -122,6 +122,12 @@ ccl_device void svm_node_closure_bsdf(KernelGlobals *kg, ShaderData *sd, float *
 
 	uint mix_weight_offset;
 	decode_node_uchar4(node.y, &type, &param1_offset, &param2_offset, &mix_weight_offset);
+
+	/* save closure space for shadow rays */
+	if(path_flag & (PATH_RAY_SHADOW|PATH_RAY_EMISSION)) {
+		return;
+	}
+
 	float mix_weight = (stack_valid(mix_weight_offset)? stack_load_float(stack, mix_weight_offset): 1.0f);
 
 	/* note we read this extra node before weight check, so offset is added */
@@ -171,18 +177,6 @@ ccl_device void svm_node_closure_bsdf(KernelGlobals *kg, ShaderData *sd, float *
 				sc->data2 = 0.0f;
 				sc->N = N;
 				ccl_fetch(sd, flag) |= bsdf_translucent_setup(sc);
-			}
-			break;
-		}
-		case CLOSURE_BSDF_TRANSPARENT_ID: {
-			ShaderClosure *sc = svm_node_closure_get_bsdf(sd, mix_weight);
-
-			if(sc) {
-				sc->data0 = 0.0f;
-				sc->data1 = 0.0f;
-				sc->data2 = 0.0f;
-				sc->N = N;
-				ccl_fetch(sd, flag) |= bsdf_transparent_setup(sc);
 			}
 			break;
 		}
@@ -551,6 +545,14 @@ ccl_device void svm_node_closure_volume(KernelGlobals *kg, ShaderData *sd, float
 	float param2 = (stack_valid(param2_offset))? stack_load_float(stack, param2_offset): __uint_as_float(node.w);
 	float density = fmaxf(param1, 0.0f);
 
+	if(path_flag & PATH_RAY_EMISSION) {
+		return;
+	}
+	else if(path_flag & PATH_RAY_SHADOW) {
+		// save closures space for shadow rays
+		type = CLOSURE_VOLUME_ABSORPTION_ID;
+	}
+
 	int prev_flag = ccl_fetch(sd, flag);
 
 	switch(type) {
@@ -589,8 +591,12 @@ ccl_device void svm_node_closure_volume(KernelGlobals *kg, ShaderData *sd, float
 #endif
 }
 
-ccl_device void svm_node_closure_emission(ShaderData *sd, float *stack, uint4 node)
+ccl_device void svm_node_closure_emission(ShaderData *sd, float *stack, uint4 node, int path_flag)
 {
+	if(path_flag & PATH_RAY_SHADOW) {
+		return;
+	}
+
 	uint mix_weight_offset = node.y;
 	float mix_weight = 1.0f;
 
@@ -611,8 +617,12 @@ ccl_device void svm_node_closure_emission(ShaderData *sd, float *stack, uint4 no
 	}
 }
 
-ccl_device void svm_node_closure_background(ShaderData *sd, float *stack, uint4 node)
+ccl_device void svm_node_closure_background(ShaderData *sd, float *stack, uint4 node, int path_flag)
 {
+	if(path_flag & PATH_RAY_SHADOW) {
+		return;
+	}
+
 	uint mix_weight_offset = node.y;
 	float mix_weight = 1.0f;
 
@@ -634,8 +644,38 @@ ccl_device void svm_node_closure_background(ShaderData *sd, float *stack, uint4 
 	}
 }
 
-ccl_device void svm_node_closure_holdout(ShaderData *sd, float *stack, uint4 node)
+ccl_device void svm_node_closure_transparent(ShaderData *sd, float *stack, uint4 node, int path_flag)
 {
+	if(path_flag & PATH_RAY_EMISSION) {
+		return;
+	}
+
+	uint mix_weight_offset = node.y;
+	float mix_weight = 1.0f;
+
+	if(stack_valid(mix_weight_offset)) {
+		mix_weight = stack_load_float(stack, mix_weight_offset);
+
+		if(mix_weight == 0.0f)
+			return;
+	}
+
+	svm_node_closure_get_non_bsdf(sd, CLOSURE_BSDF_TRANSPARENT_ID, mix_weight);
+
+	if(ccl_fetch(sd, flag) & SD_TRANSPARENT) {
+		shader_merge_last_closure_without_data(sd);
+	}
+	else {
+		ccl_fetch(sd, flag) |= SD_BSDF|SD_TRANSPARENT;
+	}
+}
+
+ccl_device void svm_node_closure_holdout(ShaderData *sd, float *stack, uint4 node, int path_flag)
+{
+	if(path_flag & (PATH_RAY_SHADOW|PATH_RAY_EMISSION)) {
+		return;
+	}
+
 	uint mix_weight_offset = node.y;
 	float mix_weight = 1.0f;
 
@@ -656,8 +696,12 @@ ccl_device void svm_node_closure_holdout(ShaderData *sd, float *stack, uint4 nod
 	}
 }
 
-ccl_device void svm_node_closure_ambient_occlusion(ShaderData *sd, float *stack, uint4 node)
+ccl_device void svm_node_closure_ambient_occlusion(ShaderData *sd, float *stack, uint4 node, int path_flag)
 {
+	if(path_flag & (PATH_RAY_SHADOW|PATH_RAY_EMISSION)) {
+		return;
+	}
+
 	uint mix_weight_offset = node.y;
 	float mix_weight = 1.0f;
 

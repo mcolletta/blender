@@ -786,6 +786,9 @@ ccl_device void shader_eval_surface(KernelGlobals *kg, ShaderData *sd,
 	ccl_fetch(sd, num_closure) = 0;
 	ccl_fetch(sd, randb_closure) = randb;
 
+	if(ctx == SHADER_CONTEXT_EMISSION)
+		path_flag |= PATH_RAY_EMISSION;
+
 #ifdef __OSL__
 	if(kg->osl)
 		OSLShader::eval_surface(kg, sd, state, path_flag, ctx);
@@ -811,6 +814,9 @@ ccl_device float3 shader_eval_background(KernelGlobals *kg, ShaderData *sd,
 {
 	ccl_fetch(sd, num_closure) = 0;
 	ccl_fetch(sd, randb_closure) = 0.0f;
+
+	if(ctx == SHADER_CONTEXT_EMISSION)
+		path_flag |= PATH_RAY_EMISSION;
 
 #ifdef __OSL__
 	if(kg->osl) {

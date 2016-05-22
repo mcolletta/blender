@@ -2127,14 +2127,26 @@ void TranslucentBsdfNode::compile(OSLCompiler& compiler)
 /* Transparent BSDF Closure */
 
 TransparentBsdfNode::TransparentBsdfNode()
+: ShaderNode("transparent")
 {
-	name = "transparent";
-	closure = CLOSURE_BSDF_TRANSPARENT_ID;
+	special_type = SHADER_SPECIAL_TYPE_CLOSURE;
+
+	add_input("Color", SHADER_SOCKET_COLOR, make_float3(0.8f, 0.8f, 0.8f));
+	add_input("SurfaceMixWeight", SHADER_SOCKET_FLOAT, 0.0f, ShaderInput::USE_SVM);
+
+	add_output("BSDF", SHADER_SOCKET_CLOSURE);
 }
 
 void TransparentBsdfNode::compile(SVMCompiler& compiler)
 {
-	BsdfNode::compile(compiler, NULL, NULL);
+	ShaderInput *color_in = input("Color");
+
+	if(color_in->link)
+		compiler.add_node(NODE_CLOSURE_WEIGHT, compiler.stack_assign(color_in));
+	else
+		compiler.add_node(NODE_CLOSURE_SET_WEIGHT, color_in->value);
+
+	compiler.add_node(NODE_CLOSURE_TRANSPARENT, compiler.closure_mix_weight_offset());
 }
 
 void TransparentBsdfNode::compile(OSLCompiler& compiler)
