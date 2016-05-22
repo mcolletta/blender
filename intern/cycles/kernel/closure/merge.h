@@ -56,9 +56,9 @@ ccl_device_noinline void shader_merge_last_closure_with_data(ShaderData *sd)
 			continue;
 
 		if(CLOSURE_IS_BSDF_OR_BSSRDF(sc->type)) {
-			if(sc->N != merge_sc->N)
+			if(!isequal(sc->N, merge_sc->N))
 				continue;
-			else if(CLOSURE_IS_BSDF_ANISOTROPIC(sc->type) && sc->T != merge_sc->T)
+			else if(CLOSURE_IS_BSDF_ANISOTROPIC(sc->type) && !isequal(sc->T, merge_sc->T))
 				continue;
 		}
 

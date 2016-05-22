@@ -568,6 +568,11 @@ ccl_device_inline bool operator==(const float3 a, const float3 b)
 #endif
 }
 
+ccl_device_inline bool isequal(const float3 a, const float3 b)
+{
+	return a == b;
+}
+
 ccl_device_inline bool operator!=(const float3 a, const float3 b)
 {
 	return !(a == b);
