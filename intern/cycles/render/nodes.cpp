@@ -1783,6 +1783,7 @@ static ShaderEnum aniso_distribution_init()
 
 	enm.insert("Beckmann", CLOSURE_BSDF_MICROFACET_BECKMANN_ANISO_ID);
 	enm.insert("GGX", CLOSURE_BSDF_MICROFACET_GGX_ANISO_ID);
+	enm.insert("Multiscatter GGX", CLOSURE_BSDF_MICROFACET_MULTI_GGX_ANISO_ID);
 	enm.insert("Ashikhmin-Shirley", CLOSURE_BSDF_ASHIKHMIN_SHIRLEY_ANISO_ID);
 
 	return enm;
@@ -1818,7 +1819,10 @@ void AnisotropicBsdfNode::compile(SVMCompiler& compiler)
 {
 	closure = (ClosureType)distribution_enum[distribution];
 
-	BsdfNode::compile(compiler, input("Roughness"), input("Anisotropy"), input("Rotation"));
+	if(closure == CLOSURE_BSDF_MICROFACET_MULTI_GGX_ANISO_ID)
+		BsdfNode::compile(compiler, input("Roughness"), input("Anisotropy"), input("Rotation"), input("Color"));
+	else
+		BsdfNode::compile(compiler, input("Roughness"), input("Anisotropy"), input("Rotation"));
 }
 
 void AnisotropicBsdfNode::compile(OSLCompiler& compiler)
@@ -1837,6 +1841,7 @@ static ShaderEnum glossy_distribution_init()
 	enm.insert("Beckmann", CLOSURE_BSDF_MICROFACET_BECKMANN_ID);
 	enm.insert("GGX", CLOSURE_BSDF_MICROFACET_GGX_ID);
 	enm.insert("Ashikhmin-Shirley", CLOSURE_BSDF_ASHIKHMIN_SHIRLEY_ID);
+	enm.insert("Multiscatter GGX", CLOSURE_BSDF_MICROFACET_MULTI_GGX_ID);
 
 	return enm;
 }
@@ -1886,6 +1891,8 @@ void GlossyBsdfNode::compile(SVMCompiler& compiler)
 
 	if(closure == CLOSURE_BSDF_REFLECTION_ID)
 		BsdfNode::compile(compiler, NULL, NULL);
+	else if(closure == CLOSURE_BSDF_MICROFACET_MULTI_GGX_ID)
+		BsdfNode::compile(compiler, input("Roughness"), NULL, input("Color"));
 	else
 		BsdfNode::compile(compiler, input("Roughness"), NULL);
 }
@@ -1905,6 +1912,7 @@ static ShaderEnum glass_distribution_init()
 	enm.insert("Sharp", CLOSURE_BSDF_SHARP_GLASS_ID);
 	enm.insert("Beckmann", CLOSURE_BSDF_MICROFACET_BECKMANN_GLASS_ID);
 	enm.insert("GGX", CLOSURE_BSDF_MICROFACET_GGX_GLASS_ID);
+	enm.insert("Multiscatter GGX", CLOSURE_BSDF_MICROFACET_MULTI_GGX_GLASS_ID);
 
 	return enm;
 }
@@ -1955,6 +1963,8 @@ void GlassBsdfNode::compile(SVMCompiler& compiler)
 
 	if(closure == CLOSURE_BSDF_SHARP_GLASS_ID)
 		BsdfNode::compile(compiler, NULL, input("IOR"));
+	else if(closure == CLOSURE_BSDF_MICROFACET_MULTI_GGX_GLASS_ID)
+		BsdfNode::compile(compiler, input("Roughness"), input("IOR"), input("Color"));
 	else
 		BsdfNode::compile(compiler, input("Roughness"), input("IOR"));
 }

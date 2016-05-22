@@ -20,6 +20,7 @@
 #include "../closure/bsdf_phong_ramp.h"
 #include "../closure/bsdf_diffuse_ramp.h"
 #include "../closure/bsdf_microfacet.h"
+#include "../closure/bsdf_microfacet_multi.h"
 #include "../closure/bsdf_reflection.h"
 #include "../closure/bsdf_refraction.h"
 #include "../closure/bsdf_transparent.h"
@@ -84,6 +85,14 @@ ccl_device int bsdf_sample(KernelGlobals *kg, const ShaderData *sd, const Shader
 		case CLOSURE_BSDF_MICROFACET_GGX_REFRACTION_ID:
 			label = bsdf_microfacet_ggx_sample(kg, sc, ccl_fetch(sd, Ng), ccl_fetch(sd, I), ccl_fetch(sd, dI).dx, ccl_fetch(sd, dI).dy, randu, randv,
 				eval, omega_in, &domega_in->dx, &domega_in->dy, pdf);
+			break;
+		case CLOSURE_BSDF_MICROFACET_MULTI_GGX_ID:
+			label = bsdf_microfacet_multi_ggx_sample(kg, sc, ccl_fetch(sd, Ng), ccl_fetch(sd, I), ccl_fetch(sd, dI).dx, ccl_fetch(sd, dI).dy, randu, randv,
+			        eval, omega_in,  &domega_in->dx, &domega_in->dy, pdf);
+			break;
+		case CLOSURE_BSDF_MICROFACET_MULTI_GGX_GLASS_ID:
+			label = bsdf_microfacet_multi_ggx_glass_sample(kg, sc, ccl_fetch(sd, Ng), ccl_fetch(sd, I), ccl_fetch(sd, dI).dx, ccl_fetch(sd, dI).dy, randu, randv,
+			        eval, omega_in,  &domega_in->dx, &domega_in->dy, pdf);
 			break;
 		case CLOSURE_BSDF_MICROFACET_BECKMANN_ID:
 		case CLOSURE_BSDF_MICROFACET_BECKMANN_ANISO_ID:
@@ -172,6 +181,12 @@ ccl_device float3 bsdf_eval(KernelGlobals *kg, const ShaderData *sd, const Shade
 			case CLOSURE_BSDF_MICROFACET_GGX_REFRACTION_ID:
 				eval = bsdf_microfacet_ggx_eval_reflect(sc, ccl_fetch(sd, I), omega_in, pdf);
 				break;
+			case CLOSURE_BSDF_MICROFACET_MULTI_GGX_ID:
+				eval = bsdf_microfacet_multi_ggx_eval_reflect(sc, ccl_fetch(sd, I), omega_in, pdf);
+				break;
+			case CLOSURE_BSDF_MICROFACET_MULTI_GGX_GLASS_ID:
+				eval = bsdf_microfacet_multi_ggx_glass_eval_reflect(sc, ccl_fetch(sd, I), omega_in, pdf);
+				break;
 			case CLOSURE_BSDF_MICROFACET_BECKMANN_ID:
 			case CLOSURE_BSDF_MICROFACET_BECKMANN_ANISO_ID:
 			case CLOSURE_BSDF_MICROFACET_BECKMANN_REFRACTION_ID:
@@ -234,6 +249,12 @@ ccl_device float3 bsdf_eval(KernelGlobals *kg, const ShaderData *sd, const Shade
 			case CLOSURE_BSDF_MICROFACET_GGX_REFRACTION_ID:
 				eval = bsdf_microfacet_ggx_eval_transmit(sc, ccl_fetch(sd, I), omega_in, pdf);
 				break;
+			case CLOSURE_BSDF_MICROFACET_MULTI_GGX_ID:
+				eval = bsdf_microfacet_multi_ggx_eval_transmit(sc, ccl_fetch(sd, I), omega_in, pdf);
+				break;
+			case CLOSURE_BSDF_MICROFACET_MULTI_GGX_GLASS_ID:
+				eval = bsdf_microfacet_multi_ggx_glass_eval_transmit(sc, ccl_fetch(sd, I), omega_in, pdf);
+				break;
 			case CLOSURE_BSDF_MICROFACET_BECKMANN_ID:
 			case CLOSURE_BSDF_MICROFACET_BECKMANN_ANISO_ID:
 			case CLOSURE_BSDF_MICROFACET_BECKMANN_REFRACTION_ID:
@@ -286,6 +307,10 @@ ccl_device void bsdf_blur(KernelGlobals *kg, ShaderClosure *sc, float roughness)
 
 #ifdef __SVM__
 	switch(sc->type) {
+		case CLOSURE_BSDF_MICROFACET_MULTI_GGX_ID:
+		case CLOSURE_BSDF_MICROFACET_MULTI_GGX_GLASS_ID:
+			bsdf_microfacet_multi_ggx_blur(sc, roughness);
+			break;
 		case CLOSURE_BSDF_MICROFACET_GGX_ID:
 		case CLOSURE_BSDF_MICROFACET_GGX_ANISO_ID:
 		case CLOSURE_BSDF_MICROFACET_GGX_REFRACTION_ID:

@@ -545,6 +545,11 @@ ccl_device_inline float3 normalize(const float3 a)
 
 #endif
 
+ccl_device_inline float3 saturate(float3 a)
+{
+	return make_float3(saturate(a.x), saturate(a.y), saturate(a.z));
+}
+
 ccl_device_inline float3 normalize_len(const float3 a, float *t)
 {
 	*t = len(a);

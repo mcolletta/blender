@@ -652,9 +652,7 @@ typedef ccl_addr_space struct ShaderClosure {
 	 * values by various BSDF closures for more effective sampling
 	 * and evaluation.
 	 */
-	float custom1;
-	float custom2;
-	float custom3;
+	float3 custom;
 
 #ifdef __OSL__
 	void *prim, *pad4;

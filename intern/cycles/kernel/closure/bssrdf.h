@@ -207,12 +207,12 @@ ccl_device void bssrdf_burley_setup(ShaderClosure *sc)
 	const float s = bssrdf_burley_fitting(A);
 	const float d = l / s;
 
-	sc->custom1 = d;
+	sc->custom.x = d;
 }
 
 ccl_device float bssrdf_burley_eval(ShaderClosure *sc, float r)
 {
-	const float d = sc->custom1;
+	const float d = sc->custom.x;
 	const float Rm = BURLEY_TRUNCATE * d;
 
 	if(r >= Rm)
@@ -281,7 +281,7 @@ ccl_device void bssrdf_burley_sample(ShaderClosure *sc,
                                      float *r,
                                      float *h)
 {
-	const float d = sc->custom1;
+	const float d = sc->custom.x;
 	const float Rm = BURLEY_TRUNCATE * d;
 	const float r_ = bssrdf_burley_root_find(xi * BURLEY_TRUNCATE_CDF) * d;
 

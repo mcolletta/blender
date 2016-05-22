@@ -415,6 +415,9 @@ static ShaderNode *add_node(Scene *scene,
 			case BL::ShaderNodeBsdfAnisotropic::distribution_GGX:
 				aniso->distribution = ustring("GGX");
 				break;
+			case BL::ShaderNodeBsdfAnisotropic::distribution_MULTI_GGX:
+				aniso->distribution = ustring("Multiscatter GGX");
+				break;
 			case BL::ShaderNodeBsdfAnisotropic::distribution_ASHIKHMIN_SHIRLEY:
 				aniso->distribution = ustring("Ashikhmin-Shirley");
 				break;
@@ -461,6 +464,9 @@ static ShaderNode *add_node(Scene *scene,
 			case BL::ShaderNodeBsdfGlossy::distribution_ASHIKHMIN_SHIRLEY:
 				glossy->distribution = ustring("Ashikhmin-Shirley");
 				break;
+			case BL::ShaderNodeBsdfGlossy::distribution_MULTI_GGX:
+				glossy->distribution = ustring("Multiscatter GGX");
+				break;
 		}
 		node = glossy;
 	}
@@ -477,6 +483,9 @@ static ShaderNode *add_node(Scene *scene,
 			case BL::ShaderNodeBsdfGlass::distribution_GGX:
 				glass->distribution = ustring("GGX");
 				break;
+			case BL::ShaderNodeBsdfGlass::distribution_MULTI_GGX:
+				glass->distribution = ustring("Multiscatter GGX");
+				break;
 		}
 		node = glass;
 	}
@@ -491,6 +500,8 @@ static ShaderNode *add_node(Scene *scene,
 				refraction->distribution = ustring("Beckmann");
 				break;
 			case BL::ShaderNodeBsdfRefraction::distribution_GGX:
+			/* Multiscattering GGX isn't supported for the Refraction BSDF. */
+			case BL::ShaderNodeBsdfRefraction::distribution_MULTI_GGX:
 				refraction->distribution = ustring("GGX");
 				break;
 		}
